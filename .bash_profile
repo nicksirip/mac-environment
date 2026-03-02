@@ -1,8 +1,26 @@
-# NOTE: If bash tab completions (e.g. podman) fail with "bash: _get_comp_words_by_ref:
-# not found", you are running macOS system bash (3.2). Fix it by setting Homebrew
-# bash as your login shell:
-#   sudo sh -c 'echo /opt/homebrew/bin/bash >> /etc/shells'
-#   chsh -s /opt/homebrew/bin/bash
+# Re-exec with Homebrew bash when running under the macOS system bash (3.2).
+# bash-completion@2 requires bash >= 4.1; without this, tab completions that
+# rely on _get_comp_words_by_ref (e.g. podman) will not work correctly.
+# Guards:
+#   $- == *i*            – only re-exec for interactive shells
+#   TERM_PROGRAM         – skip in VS Code integrated terminal (sets TERM_PROGRAM=vscode)
+#   _ppid_comm           – skip when the parent process is a VS Code helper:
+#                            node, Electron, or any "Code Helper*" variant
+#                          (Container Tools shells are parented by "Code Helper (Plugin)")
+#   BASH_PROFILE_REEXEC  – prevent infinite loops
+_ppid_comm=$(ps -o comm= -p "$PPID" 2>/dev/null || true)
+if (( BASH_VERSINFO[0] < 4 )) && [[ $- == *i* ]] \
+        && [[ "${TERM_PROGRAM:-}" != "vscode" ]] \
+        && [[ "${_ppid_comm}" != "node" ]] \
+        && [[ "${_ppid_comm}" != "Electron" ]] \
+        && [[ "${_ppid_comm}" != Code\ Helper* ]] \
+        && [[ -x /opt/homebrew/bin/bash ]] \
+        && [[ -z "${BASH_PROFILE_REEXEC:-}" ]]; then
+    unset _ppid_comm
+    export BASH_PROFILE_REEXEC=1
+    exec -l /opt/homebrew/bin/bash
+fi
+unset _ppid_comm
 
 # Homebrew
 export HOMEBREW_PREFIX="/opt/homebrew";
