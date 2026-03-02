@@ -3,18 +3,23 @@
 # rely on _get_comp_words_by_ref (e.g. podman) will not work correctly.
 # Guards:
 #   $- == *i*            – only re-exec for interactive shells
-#   TERM_PROGRAM         – skip in VS Code integrated terminal
-#   VSCODE_IPC_HOOK_CLI  – skip in any VS Code extension shell (e.g. Container
-#                          Tools); VS Code sets this on itself and all children
+#   TERM_PROGRAM         – skip in VS Code integrated terminal (sets TERM_PROGRAM=vscode)
+#   _ppid_comm           – skip when the parent process is node or Electron (the
+#                          VS Code extension host); this catches all extension-
+#                          spawned shells (e.g. Container Tools) regardless of
+#                          which environment variables they do or do not inherit
 #   BASH_PROFILE_REEXEC  – prevent infinite loops
+_ppid_comm=$(ps -o comm= -p "$PPID" 2>/dev/null || true)
 if (( BASH_VERSINFO[0] < 4 )) && [[ $- == *i* ]] \
         && [[ "${TERM_PROGRAM:-}" != "vscode" ]] \
-        && [[ -z "${VSCODE_IPC_HOOK_CLI:-}" ]] \
+        && [[ "${_ppid_comm}" != "node" && "${_ppid_comm}" != "Electron" ]] \
         && [[ -x /opt/homebrew/bin/bash ]] \
         && [[ -z "${BASH_PROFILE_REEXEC:-}" ]]; then
+    unset _ppid_comm
     export BASH_PROFILE_REEXEC=1
     exec -l /opt/homebrew/bin/bash
 fi
+unset _ppid_comm
 
 # Homebrew
 export HOMEBREW_PREFIX="/opt/homebrew";
