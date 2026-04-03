@@ -82,6 +82,11 @@ if [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
 fi
 
 # Tools
+if command -v atuin &>/dev/null; then
+    [[ -f "$HOMEBREW_PREFIX/etc/profile.d/bash-preexec.sh" ]] && . "$HOMEBREW_PREFIX/etc/profile.d/bash-preexec.sh"
+    eval "$(atuin init bash)"
+fi
+
 if [ -f /usr/share/bash-completion/completions/fzf ]; then
     eval "$(fzf --bash)"
 fi
