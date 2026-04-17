@@ -158,3 +158,136 @@ Host dev-*
 ```
 
 With this config, typing `ssh <TAB>` will suggest: `webserver` and `db-prod` (but not `dev-*`).
+
+---
+
+## Podman Command Autocompletion
+
+Tab completion for `podman` is provided by `.podman-completion.bash`, which is sourced automatically from `.bash_profile`.
+
+### Installation
+
+```bash
+source ~/.bash_profile
+```
+
+Or manually:
+
+```bash
+source ~/.podman-completion.bash
+```
+
+### Usage
+
+```bash
+podman <TAB>
+# Shows: run pull push ps images ...
+
+podman run <TAB>
+# Shows available options and flags
+```
+
+### Requirements
+
+- [Podman](https://podman.io) must be installed (`brew install podman`)
+- Bash ≥ 4.1 is required (see [Shell Requirement](#shell-requirement-bash--4) above); `podman` completion relies on `_get_comp_words_by_ref` from `bash-completion@2`
+
+---
+
+## fzf (Fuzzy Finder)
+
+[fzf](https://github.com/junegunn/fzf) provides interactive fuzzy search for files, command history, and more. When `fzf` is found in `PATH`, `.bash_profile` initialises it with `fzf --bash`, which sets up both tab-completions and key-bindings in a single call.
+
+### Installation
+
+```bash
+brew install fzf
+```
+
+No additional configuration is needed; `.bash_profile` detects `fzf` automatically.
+
+### Key Bindings (enabled automatically)
+
+| Key | Action |
+|-----|--------|
+| `Ctrl-R` | Fuzzy-search command history |
+| `Ctrl-T` | Fuzzy-search files and paste selection |
+| `Alt-C`  | `cd` into a fuzzy-selected directory |
+
+### Usage
+
+```bash
+vim **<TAB>
+# Opens fzf to fuzzy-select a file path
+
+ssh **<TAB>
+# Opens fzf to fuzzy-select an SSH host
+```
+
+---
+
+## Atuin (Shell History)
+
+[Atuin](https://atuin.sh) replaces shell history with a searchable, syncable SQLite database. `.bash_profile` initialises it via `atuin init bash` when `atuin` is found in `PATH`, and loads the required `bash-preexec` hook from Homebrew beforehand.
+
+### Installation
+
+```bash
+brew install atuin bash-preexec
+```
+
+### Usage
+
+Press `Ctrl-R` to open the Atuin interactive history search (replaces the default readline reverse-search when Atuin is active).
+
+---
+
+## Keychain (SSH Key Management)
+
+[Keychain](https://www.funtoo.org/Keychain) manages `ssh-agent` across login sessions so you only need to enter your passphrase once per boot. `.bash_profile` runs `keychain --nolock --eval -q` when `keychain` is found in `PATH`.
+
+### Installation
+
+```bash
+brew install keychain
+```
+
+No additional configuration is required; keys are picked up from your default SSH key locations.
+
+---
+
+## Starship Prompt
+
+[Starship](https://starship.rs) is a fast, cross-shell prompt. `.bash_profile` initialises it with `starship init bash` when `starship` is found in `PATH`.
+
+### Installation
+
+```bash
+brew install starship
+```
+
+Customise the prompt by editing `~/.config/starship.toml`. See the [Starship docs](https://starship.rs/config/) for all available options.
+
+---
+
+## tmux Session Management
+
+`.bash_profile` automatically attaches to (or creates) a persistent tmux session named `default` whenever you open an interactive shell outside of tmux. This ensures you always land in a tmux session with a consistent environment.
+
+```bash
+# In .bash_profile:
+if [ -z "$TMUX" ]; then
+    unset LC_ALL
+    tmux new -t default || tmux new -s default
+fi
+```
+
+`LC_ALL` is unset before handing off to tmux so that the locale is inherited correctly by tmux panes (tmux has its own locale handling).
+
+### Installation
+
+```bash
+brew install tmux
+```
+
+See `.tmux.conf` in this repository for the tmux configuration used with this setup.
