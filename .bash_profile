@@ -73,21 +73,13 @@ if [ -f ~/.podman-completion.bash ]; then
     . ~/.podman-completion.bash
 fi
 
-if [ -f /usr/share/bash-completion/completions/fzf ]; then
-    . /usr/share/bash-completion/completions/fzf
-fi
-
-if [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
-    . /usr/share/doc/fzf/examples/key-bindings.bash
-fi
-
 # Tools
 if command -v atuin &>/dev/null; then
     [[ -n "${HOMEBREW_PREFIX:-}" ]] && [[ -f "$HOMEBREW_PREFIX/etc/profile.d/bash-preexec.sh" ]] && . "$HOMEBREW_PREFIX/etc/profile.d/bash-preexec.sh"
     eval "$(atuin init bash)"
 fi
 
-if [ -f /usr/share/bash-completion/completions/fzf ]; then
+if command -v fzf &>/dev/null; then
     eval "$(fzf --bash)"
 fi
 
