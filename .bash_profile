@@ -34,7 +34,7 @@ export HOMEBREW_REPOSITORY="/opt/homebrew"
 # Prepend Homebrew paths
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin${PATH+:$PATH}"
 export MANPATH="/opt/homebrew/share/man${MANPATH+:$MANPATH}:"
-export INFOPATH="/opt/homebrew/share/info:${INFOPATH:-}"
+export INFOPATH="/opt/homebrew/share/info:${INFOPATH:-}:"
 
 # General Environment
 export EDITOR=vi
