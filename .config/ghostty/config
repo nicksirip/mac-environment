@@ -13,3 +13,10 @@ window-padding-x = 4
 window-padding-y = 4
 confirm-close-surface = false
 window-colorspace = display-p3
+
+# --- quick terminal (dropdown) ---
+# Global hotkey: Ctrl+Option+/  (works even when Ghostty isn't focused —
+# requires Accessibility permission: System Settings > Privacy & Security >
+# Accessibility > enable Ghostty). Drops down from the top edge.
+keybind = global:ctrl+alt+/=toggle_quick_terminal
+quick-terminal-position = top
