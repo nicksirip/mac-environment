@@ -1,0 +1,15 @@
+theme = iTerm2 Default
+font-family = InconsolataNerdFontMono
+font-size = 16
+background-opacity = 0.9
+
+# --- niceties ---
+macos-option-as-alt = true
+copy-on-select = clipboard
+scrollback-limit = 10000000
+window-save-state = always
+mouse-hide-while-typing = false
+window-padding-x = 4
+window-padding-y = 4
+confirm-close-surface = false
+window-colorspace = display-p3
