@@ -17,6 +17,7 @@ window-colorspace = display-p3
 # --- quick terminal (dropdown) ---
 # Global hotkey: Ctrl+Option+/  (works even when Ghostty isn't focused —
 # requires Accessibility permission: System Settings > Privacy & Security >
-# Accessibility > enable Ghostty). Drops down from the top edge.
+# Accessibility > enable Ghostty). Appears centered, fast 0.1s animation.
 keybind = global:ctrl+alt+/=toggle_quick_terminal
-quick-terminal-position = top
+quick-terminal-position = center
+quick-terminal-animation-duration = 0.1
