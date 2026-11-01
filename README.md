@@ -196,7 +196,7 @@ podman run <TAB>
 
 ## fzf (Fuzzy Finder)
 
-[fzf](https://github.com/junegunn/fzf) provides interactive fuzzy search for files, command history, and more. When `fzf` is found in `PATH`, `.bash_profile` initialises it with `fzf --bash`, which sets up both tab-completions and key-bindings in a single call.
+[fzf](https://github.com/junegunn/fzf) provides interactive fuzzy search for files, command history, and more. When `fzf` is found in `PATH`, `.bash_profile` initialises it with `fzf --bash`, which sets up both tab-completions and key-bindings in a single call. The init output is cached in `~/.cache/bash-init/` (by the `_cached_init` helper) and regenerated only when the `fzf` binary is newer than the cache, so new shells and tmux panes don't spawn `fzf` every time.
 
 ### Installation
 
@@ -226,19 +226,18 @@ ssh **<TAB>
 
 ---
 
-## Atuin (Shell History)
+## Shell History
 
-[Atuin](https://atuin.sh) replaces shell history with a searchable, syncable SQLite database. `.bash_profile` initialises it via `atuin init bash` when `atuin` is found in `PATH`, and loads the required `bash-preexec` hook from Homebrew beforehand.
+History is configured in the interactive block of `.bash_profile`. It's tuned so tmux panes share history in near real time without paying a per-prompt cost:
 
-### Installation
+| Setting | Effect |
+|---|---|
+| `HISTSIZE=50000`, `HISTFILESIZE=50000` | Keep 50k commands in memory and on disk |
+| `HISTCONTROL=ignoredups:ignorespace` | Skip consecutive duplicates and any command prefixed with a space (handy for one-off secrets) |
+| `shopt -s histappend` | Append to `~/.bash_history` on exit instead of overwriting, so concurrent shells don't clobber each other |
+| `history -a` in `PROMPT_COMMAND` | Flush each command to disk as it runs, so new panes see it immediately. Appended *after* Starship init, because Starship overwrites `PROMPT_COMMAND` |
 
-```bash
-brew install atuin bash-preexec
-```
-
-### Usage
-
-Press `Ctrl-R` to open the Atuin interactive history search (replaces the default readline reverse-search when Atuin is active).
+`erasedups` is deliberately not used: at 50k entries it rescans the whole list on every command. `Ctrl-R` history search is provided by fzf (above).
 
 ---
 
@@ -258,7 +257,7 @@ No additional configuration is required; keys are picked up from your default SS
 
 ## Starship Prompt
 
-[Starship](https://starship.rs) is a fast, cross-shell prompt. `.bash_profile` initialises it with `starship init bash` when `starship` is found in `PATH`.
+[Starship](https://starship.rs) is a fast, cross-shell prompt. When `starship` is found in `PATH`, `.bash_profile` caches the output of `starship init bash --print-full-init` (the full init, not the one-line bootstrap, so the subprocess is actually saved) via `_cached_init`.
 
 ### Installation
 
@@ -272,17 +271,24 @@ Customise the prompt by editing `~/.config/starship.toml`. See the [Starship doc
 
 ## tmux Session Management
 
-`.bash_profile` automatically attaches to (or creates) a persistent tmux session named `default` whenever you open an interactive shell outside of tmux. This ensures you always land in a tmux session with a consistent environment.
+`.bash_profile` automatically puts every interactive shell into tmux when it's opened outside of tmux:
+
+- **A tmux server is already running** → opens a *grouped* session on the newest existing session (`tmux new-session -t <session>`). It shares the same windows but keeps its own current-window selection, so each terminal can look at a different window without moving the others. The grouped session is set to `destroy-unattached`, so it's cleaned up when you detach.
+- **No server yet** → creates a session named `default`.
+
+It's skipped in VS Code integrated terminals, and you can skip it for a single shell with `NO_TMUX=1` (e.g. `NO_TMUX=1 bash -l`). tmux is launched under `env -u LANG` so tmux applies its own locale handling.
 
 ```bash
-# In .bash_profile:
-if [ -z "$TMUX" ]; then
-    unset LC_ALL
-    tmux new -t default || tmux new -s default
+# Simplified view of the launch block in .bash_profile:
+if [ -z "$TMUX" ] && [ "${TERM_PROGRAM:-}" != "vscode" ] && [ -z "${NO_TMUX:-}" ]; then
+    if env -u LANG tmux has-session 2>/dev/null; then
+        target=$(env -u LANG tmux list-sessions -F '#{session_name}' | head -1)
+        env -u LANG tmux new-session -t "$target" \; set-option destroy-unattached on
+    else
+        env -u LANG tmux new-session -s default
+    fi
 fi
 ```
-
-`LC_ALL` is unset before handing off to tmux so that the locale is inherited correctly by tmux panes (tmux has its own locale handling).
 
 ### Installation
 
@@ -291,3 +297,37 @@ brew install tmux
 ```
 
 See `.tmux.conf` in this repository for the tmux configuration used with this setup.
+
+---
+
+## Zoxide (Smarter `cd`)
+
+[zoxide](https://github.com/ajeetdsouza/zoxide) learns the directories you use and jumps by frecency. Initialized (and cached) in the interactive block of `.bash_profile`, after Starship so its directory-tracking hook survives. Skipped automatically if not installed.
+
+```bash
+brew install zoxide
+z proj        # jump to the best match for "proj"
+zi            # interactive picker (uses fzf)
+```
+
+---
+
+## Shell Helpers
+
+Defined in `.bash_profile` (section 5). Each checks for its dependency and prints a hint if it's missing.
+
+| Helper | What it does | Needs |
+|---|---|---|
+| `killport <port> [signal]` | Kill whatever is listening on a port (targets the listener via `lsof`, not a string match) | built-in `lsof` |
+| `watchconns [iface]` | Live view of outbound TCP SYNs, DNS queries, and TLS SNI | `brew install wireshark` (tshark), sudo |
+| `lint-shell` | Run shellcheck over the shell dotfiles and `~/.tmux/scripts/*.sh` | `brew install shellcheck` |
+| `pw <service>` / `pw search` / `pw add` | Small macOS Keychain password helper | built-in `security` |
+| `penv VAR pass/path` | Export a secret from `pass` into the current shell | `brew install pass` + a gpg key |
+| `prun VAR=pass/path -- cmd` | Inject a secret into one command's environment only (never set in the shell) | `pass` |
+| `ppick [--show] [query]` | Fuzzy-pick a `pass` entry and copy it to the clipboard; preview shows only non-secret metadata | `pass`, `fzf` |
+
+Also set in section 5:
+- `set -o vi`: vi-style command-line editing.
+- `PASSWORD_STORE_GENERATED_LENGTH` / `PASSWORD_STORE_CHARACTER_SET`: `pass generate <name>` defaults to 8 characters from an unambiguous, shell/URL-safe set.
+
+`mise` (`brew install mise`) and the Rust toolchain (`~/.cargo/env`) are activated just before the PATH de-duplication, only if present.

@@ -144,6 +144,12 @@ if [[ $- == *i* ]]; then
       *) PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }history -a" ;;
     esac
 
+    # Zoxide (cached) — smarter cd: `z <dir>` jumps by frecency, `zi` interactive.
+    # Placed AFTER starship (which overwrites PROMPT_COMMAND) so zoxide's dir-track
+    # hook survives, mirroring the history -a append above. Skipped if zoxide
+    # isn't installed (brew install zoxide).
+    _cached_init zoxide zoxide zoxide init bash
+
     # --- Session Management (Tmux) ---
     # Do not auto-enter tmux in VS Code integrated terminals.
     # Escape hatch: set NO_TMUX=1 before launching a shell to skip auto-attach
@@ -171,6 +177,14 @@ if [[ $- == *i* ]]; then
     fi
 
 fi # end interactive-only settings
+
+# ─────────────────────────────────────────────────────────────────────────
+# Runtime managers — guarded so a machine without them doesn't error.
+# ─────────────────────────────────────────────────────────────────────────
+# mise (runtime/version manager: brew install mise)
+command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
+# Rust toolchain (rustup installs ~/.cargo/env)
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # ─────────────────────────────────────────────────────────────────────────
 # De-duplicate PATH/MANPATH/INFOPATH — prevents entries from accumulating
@@ -208,3 +222,196 @@ s() {
   done
   echo "sourced: ${present[*]}"
 }
+
+# ==========================================
+# 5. Generic Helpers
+# ==========================================
+
+# vi-style command-line editing (bash). Enables modal editing at the prompt.
+set -o vi
+
+# killport <port> [signal] — kill whatever process is bound to a TCP/UDP port.
+#   Uses lsof to target the actual listener (not a command-line string match), so
+#   it won't kill unrelated processes that merely mention the number. Prints the
+#   PIDs it's about to kill first. Default signal TERM (graceful); pass a signal
+#   name/number as the 2nd arg to override.
+#   Usage: killport 8080        (SIGTERM)
+#          killport 8080 9      (SIGKILL)  |  killport 8080 KILL
+killport() {
+    [ -z "$1" ] && { echo "usage: killport <port> [signal]" >&2; return 1; }
+    local pids; pids=$(lsof -ti ":$1" 2>/dev/null)
+    [ -z "$pids" ] && { echo "killport: nothing listening on port $1" >&2; return 1; }
+    echo "killport: port $1 -> PID(s): $(echo "$pids" | tr '\n' ' ')" >&2
+    # shellcheck disable=SC2086  # intentional word-split: optional signal flag + multiple PIDs as separate args
+    kill ${2:+-$2} $pids
+}
+
+# watchconns [iface] — live outbound-connection watcher via tshark (plain output).
+#   Shows outbound TCP SYNs, DNS queries, and TLS SNI (covers HTTPS over TCP AND
+#   QUIC/HTTP3, since QUIC carries a TLS ClientHello). Straight tshark, no
+#   post-processing — columns are tshark's own -T fields / -E output.
+#   Fields: time | ip.dst | ipv6.dst | tcp.dstport | dns.qry.name | tls SNI
+#   Default iface: en0.  Usage: watchconns  |  watchconns en1
+#   Needs sudo (BPF capture) + tshark on PATH (brew install wireshark). Ctrl-C to stop.
+watchconns() {
+    local iface="${1:-en0}"
+    command -v tshark >/dev/null 2>&1 || { echo "watchconns: tshark not found on PATH" >&2; return 1; }
+    sudo tshark -i "$iface" -l -n -t ad \
+        -Y "(tcp.flags.syn==1 && tcp.flags.ack==0) || dns.flags.response==0 || tls.handshake.type==1" \
+        -T fields \
+        -e frame.time -e ip.dst -e ipv6.dst -e tcp.dstport \
+        -e dns.qry.name -e tls.handshake.extensions_server_name \
+        -E header=y -E separator='  ' -E quote=n
+}
+
+# lint-shell - run shellcheck over the shell dotfiles + helper scripts in one pass.
+# Dotfiles have no shebang so are linted as bash; in-file `# shellcheck disable=`
+# directives are honored. SC1090/SC1091 (can't-follow-source) are excluded as noise.
+# Install the linter first if missing:  brew install shellcheck
+lint-shell() {
+  if ! command -v shellcheck >/dev/null 2>&1; then
+    echo "lint-shell: shellcheck not installed — run: brew install shellcheck" >&2
+    return 1
+  fi
+  local rc=0 f
+  local -a dotfiles=(~/.bash_profile ~/.bashrc ~/.zshrc ~/.profile)
+  local -a scripts=(~/.tmux/scripts/*.sh)
+  for f in "${dotfiles[@]}"; do
+    [[ -r "$f" ]] || continue
+    echo "== ${f/#$HOME/~} =="
+    shellcheck -s bash -e SC1090,SC1091 "$f" || rc=1
+  done
+  for f in "${scripts[@]}"; do
+    [[ -r "$f" ]] || continue
+    echo "== ${f/#$HOME/~} =="
+    shellcheck -e SC1090,SC1091 "$f" || rc=1
+  done
+  [[ $rc -eq 0 ]] && echo "lint-shell: clean" || echo "lint-shell: findings above"
+  return $rc
+}
+
+# pw - small password helper on the macOS Keychain (`security` CLI).
+#   pw <service>               Get password by exact service name
+#   pw search <term>           Search entries by partial name
+#   pw add <svc> <acct> <pw>   Add/update a secret
+#   Note: `pw add` takes the secret as an argument, so it lands in shell history
+#   unless the command is prefixed with a space (HISTCONTROL=ignorespace).
+pw() {
+  case "$1" in
+    -l|search)
+      # Search for entries by partial name
+      security dump-keychain | grep -i "svce" | grep -i "$2" | sed 's/.*"svce"<blob>="//;s/"//'
+      ;;
+    -a|add)
+      # Add/update a secret: pw add <service> <account> <password>
+      if [[ -z "$2" || -z "$3" || -z "$4" ]]; then
+        echo "Usage: pw add <service-name> <account> <password>"
+        echo "Example: pw add my-service myuser 'S3cret!'"
+        return 1
+      fi
+      security add-generic-password -s "$2" -a "$3" -w "$4" -U
+      echo "✓ Saved: $2 ($3)"
+      ;;
+    -h|help)
+      echo "pw <service>         Get password by exact service name"
+      echo "pw search <term>     Search entries by partial name"
+      echo "pw add <svc> <acct> <pw>  Add/update a secret"
+      ;;
+    *)
+      # Get password by exact service name
+      security find-generic-password -s "$1" -w 2>/dev/null || echo "Not found: $1 (try: pw search $1)"
+      ;;
+  esac
+}
+
+# penv / prun — pull secrets from `pass` into the environment.
+# Secrets are read from `pass` on demand (first line of the entry) so nothing is
+# hardcoded in dotfiles. Requires `pass` + a gpg key (pinentry prompts for the
+# passphrase on first decrypt per agent-cache window).  brew install pass
+
+# penv VAR pass/path   — export VAR=<secret> into THIS shell (persists for the session).
+#   e.g.  penv GH_TOKEN github/token    ->  $GH_TOKEN is now set
+penv() {
+  if [ $# -ne 2 ]; then echo "usage: penv VAR pass/path" >&2; return 2; fi
+  command -v pass >/dev/null 2>&1 || { echo "penv: pass not found" >&2; return 1; }
+  local var="$1" path="$2" val
+  case "$var" in [!A-Za-z_]*|*[!A-Za-z0-9_]*) echo "penv: '$var' is not a valid env var name" >&2; return 2;; esac
+  val=$(pass show "$path" 2>/dev/null | head -n1)
+  if [ -z "$val" ]; then echo "penv: '$path' not found in pass (or empty)" >&2; return 1; fi
+  export "$var=$val"
+  echo "penv: exported $var from pass:$path"
+}
+
+# prun VAR=pass/path [VAR2=pass/path2 ...] -- cmd [args...]
+#   Runs cmd with the given vars injected ONLY into that command's environment —
+#   never set in this shell, gone when cmd exits. Safer than penv for one-offs.
+#   e.g.  prun GH_TOKEN=github/token -- gh repo list
+prun() {
+  command -v pass >/dev/null 2>&1 || { echo "prun: pass not found" >&2; return 1; }
+  local -a envassign=()
+  local sawsep=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --) sawsep=1; shift; break ;;
+      *=*)
+        local var="${1%%=*}" path="${1#*=}" val
+        case "$var" in [!A-Za-z_]*|*[!A-Za-z0-9_]*) echo "prun: invalid var name '$var'" >&2; return 2;; esac
+        val=$(pass show "$path" 2>/dev/null | head -n1)
+        if [ -z "$val" ]; then echo "prun: '$path' not found in pass (or empty)" >&2; return 1; fi
+        envassign+=("$var=$val")
+        shift ;;
+      *) echo "prun: expected VAR=pass/path before '--', got '$1'" >&2; return 2 ;;
+    esac
+  done
+  if [ "$sawsep" -ne 1 ] || [ $# -eq 0 ]; then
+    echo "usage: prun VAR=pass/path [VAR2=pass/path2 ...] -- cmd [args...]" >&2; return 2
+  fi
+  env "${envassign[@]}" "$@"
+}
+
+# ppick [--show] [query] — fuzzy-find a pass entry with fzf, then copy its
+#   password to the clipboard via `pass -c` (auto-clears after
+#   PASSWORD_STORE_CLIP_TIME, default 45s).
+#   - The fzf preview pane shows the entry's NON-secret metadata only (lines
+#     after line 1 — URL/username/notes), never the password, so a
+#     screenshare/shoulder-surf of the picker doesn't leak the secret.
+#   - Pass an initial [query] to pre-filter the list (forwarded to fzf).
+#   - --show ALSO prints the password to the terminal (line 1) after copying,
+#     for the cases where you need to read it; off by default.
+#   e.g.  ppick                 -> pick, copy to clipboard (nothing printed)
+#         ppick email           -> pre-filtered to entries matching 'email'
+#         ppick --show github   -> copy AND print the password
+ppick() {
+  command -v pass >/dev/null 2>&1 || { echo "ppick: pass not found" >&2; return 1; }
+  command -v fzf  >/dev/null 2>&1 || { echo "ppick: fzf not found"  >&2; return 1; }
+  local show=0
+  if [ "$1" = "--show" ]; then show=1; shift; fi
+  local store="${PASSWORD_STORE_DIR:-$HOME/.password-store}"
+  [ -d "$store" ] || { echo "ppick: no pass store at $store" >&2; return 1; }
+  local entry
+  entry=$(
+    cd "$store" 2>/dev/null \
+      && find . -name '*.gpg' | sed 's|^\./||; s|\.gpg$||' | sort \
+      | fzf --query="${1:-}" --select-1 --exit-0 --height=40% --reverse \
+            --prompt='pass> ' \
+            --preview 'pass show {} 2>/dev/null | tail -n +2' \
+            --preview-window='down,30%,wrap'
+  )
+  [ -n "$entry" ] || { echo "ppick: no entry selected" >&2; return 1; }
+  pass show -c "$entry" || { echo "ppick: failed to copy '$entry'" >&2; return 1; }
+  echo "ppick: copied '$entry' to clipboard (clears in ${PASSWORD_STORE_CLIP_TIME:-45}s)"
+  if [ "$show" -eq 1 ]; then
+    printf 'ppick: %s = %s\n' "$entry" "$(pass show "$entry" 2>/dev/null | head -n1)"
+  fi
+}
+
+# pass generate defaults. Tune `pass generate` so a bare
+#   pass generate <name>
+# yields an 8-char password from a safe, visually-unambiguous character set — no
+# need to remember -n. These set the DEFAULT character set (used when -n is NOT
+# given), so symbols are included but limited to shell/URL/CSV/JSON-safe ones.
+#   - length default 8 (override per-call: `pass generate <name> 16`)
+#   - dropped confusables: 0 1 2 5 6 8  and  B G I O S Z / b g l o s z
+#   - symbols limited to - _ . = +  (no quoting/escaping/URL-encoding needed)
+export PASSWORD_STORE_GENERATED_LENGTH=8
+export PASSWORD_STORE_CHARACTER_SET='34679ACDEFHJKLMNPQRTUVWXYacdefhijkmnpqrtuvwxy-_.=+'
