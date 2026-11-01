@@ -296,7 +296,7 @@ fi
 brew install tmux
 ```
 
-See `.tmux.conf` in this repository for the tmux configuration used with this setup.
+See `.tmux.conf` in this repository for the tmux configuration used with this setup. It passes OSC 8 hyperlinks through to the terminal (`terminal-features …:hyperlinks`, tmux 3.4+), so clickable links from programs like `ls --hyperlink` keep working inside tmux. That setting only takes effect after `tmux kill-server`; reloading the config isn't enough.
 
 ---
 
