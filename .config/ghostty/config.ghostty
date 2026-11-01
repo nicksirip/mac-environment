@@ -1,0 +1,76 @@
+# ============================================================================
+# Ghostty config — nsiripip
+# Docs:  /Applications/Ghostty.app/Contents/MacOS/ghostty +show-config --default --docs
+#        https://ghostty.org/docs/config
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Appearance
+# ---------------------------------------------------------------------------
+theme             = iTerm2 Default
+font-family       = InconsolataNerdFontMono
+font-size         = 16
+background-opacity = 0.9
+window-colorspace = display-p3
+# Slightly bolder glyph rendering on macOS
+font-thicken      = true
+# Steady (non-blinking) cursor
+cursor-style-blink = false
+
+# ---------------------------------------------------------------------------
+# Window
+# ---------------------------------------------------------------------------
+# Native macOS tabs in the titlebar
+macos-titlebar-style = tabs
+window-padding-x     = 4
+window-padding-y     = 4
+# Hide the size popup on resize (fixed size anyway)
+resize-overlay       = never
+# Disabled so the window-width/height below is enforced for every new window
+# (with =always, Ghostty restored the previous window size and ignored the size).
+window-save-state    = never
+# Initial size of new windows, in terminal grid cells (cols x rows). Both keys
+# are required or Ghostty ignores them. NOTE: window-save-state=always restores
+# the previous size for restored windows, so this mainly affects fresh windows.
+window-width         = 120
+window-height        = 30
+
+# ---------------------------------------------------------------------------
+# Clipboard
+# ---------------------------------------------------------------------------
+copy-on-select                = clipboard
+# Strip trailing whitespace on copy
+clipboard-trim-trailing-spaces = true
+# Warn on risky multi-line / control-char paste
+clipboard-paste-protection    = true
+clipboard-read                = allow
+clipboard-write               = allow
+
+# ---------------------------------------------------------------------------
+# Behavior
+# ---------------------------------------------------------------------------
+# Treat macOS Option as Alt (for terminal keybindings)
+macos-option-as-alt           = true
+scrollback-limit              = 10000000
+# New windows/tabs/splits open in the current working directory
+window-inherit-working-directory = true
+# Clickable URLs (Cmd+click to open)
+link-url                      = true
+mouse-hide-while-typing       = false
+confirm-close-surface         = false
+
+# ---------------------------------------------------------------------------
+# Quick terminal (dropdown)
+# ---------------------------------------------------------------------------
+# Global hotkey: Ctrl+Option+/  (works even when Ghostty isn't focused —
+# requires Accessibility permission: System Settings > Privacy & Security >
+# Accessibility > enable Ghostty).
+keybind = global:ctrl+alt+/=toggle_quick_terminal
+# Position `right` -> slides in from the right edge.
+# NOTE: changing the position requires a FULL restart of Ghostty on macOS.
+quick-terminal-position = right
+# Size is the primary axis for the position. For `left`/`right` the primary axis
+# is WIDTH -> 60% of screen width, full height. (Value must carry a %/px suffix;
+# a bare number is a config error.)
+quick-terminal-size = 60%
+quick-terminal-animation-duration = 0.1

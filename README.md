@@ -300,6 +300,26 @@ See `.tmux.conf` in this repository for the tmux configuration used with this se
 
 ---
 
+## Ghostty (Terminal)
+
+[Ghostty](https://ghostty.org) config lives at `.config/ghostty/config.ghostty`. Copy it to `~/.config/ghostty/config.ghostty`; Ghostty loads that path automatically (`$XDG_CONFIG_HOME/ghostty/config.ghostty`), and a file named plain `config` there is **not** picked up.
+
+Highlights:
+- **Appearance:** iTerm2 Default theme, Inconsolata Nerd Font Mono 16, 90% background opacity, Display P3, non-blinking cursor.
+- **Window:** native macOS tabs in the titlebar; new windows always open at 120×30 (`window-save-state = never` so the size isn't overridden by a restored window); new tabs/splits inherit the working directory.
+- **Clipboard:** copy-on-select, trailing whitespace trimmed on copy, paste protection for risky multi-line pastes.
+- **Quick terminal:** global hotkey `Ctrl+Option+/` slides a terminal in from the right edge at 60% of the screen width. The global hotkey needs Accessibility permission (System Settings → Privacy & Security → Accessibility → Ghostty).
+
+Check the config parses after editing:
+
+```bash
+/Applications/Ghostty.app/Contents/MacOS/ghostty +show-config
+```
+
+Most settings apply on config reload (`Cmd+Shift+,`); changing `quick-terminal-position` needs a full quit and relaunch of Ghostty.
+
+---
+
 ## Zoxide (Smarter `cd`)
 
 [zoxide](https://github.com/ajeetdsouza/zoxide) learns the directories you use and jumps by frecency. Initialized (and cached) in the interactive block of `.bash_profile`, after Starship so its directory-tracking hook survives. Skipped automatically if not installed.
