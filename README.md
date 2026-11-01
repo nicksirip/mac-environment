@@ -348,7 +348,7 @@ Key bindings (modifier = `alt`/Option):
 | `alt-shift-c` | Reload config |
 | `alt-shift-;` | Service mode: `r` reset tree, `f` toggle floating, `backspace` close others, `1` run `layouts/ws1.sh`, `esc` back |
 
-App rules send Ghostty and Chrome to workspace 1, VS Code / Kiro / Obsidian to 2, Slack to 3, Outlook to 4, Zoom to 6; any other window floats. `layouts/ws1.sh` rebuilds workspace 1 as Chrome on the left with two Ghostty windows stacked on the right. AeroSpace has no built-in layout save/restore.
+App rules send Ghostty and Chrome to workspace 1, VS Code / Kiro / Obsidian to 2, Slack to 3, Outlook and Apple Mail to 4, Zoom to 6; any other window floats. `layouts/ws1.sh` rebuilds workspace 1 as Chrome on the left with two Ghostty windows stacked on the right. AeroSpace has no built-in layout save/restore.
 
 ---
 

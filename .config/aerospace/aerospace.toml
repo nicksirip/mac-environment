@@ -172,6 +172,11 @@ run = ['move-node-to-workspace 3']
 if.app-id = 'com.microsoft.Outlook'
 run = ['move-node-to-workspace 4', 'layout tiles horizontal']
 
+# Apple Mail -> workspace 4 (with Outlook)
+[[on-window-detected]]
+if.app-id = 'com.apple.mail'
+run = ['move-node-to-workspace 4', 'layout tiles horizontal']
+
 # Zoom -> workspace 6
 # bundle id device-verified via `osascript -e 'id of app "zoom.us"'`
 [[on-window-detected]]
