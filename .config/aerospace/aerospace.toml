@@ -1,0 +1,203 @@
+# AeroSpace config — nsiripip
+# Tiling WM for macOS. Docs: https://nikitabobko.github.io/AeroSpace/guide
+# Reload after edits:  alt-shift-c   (or: aerospace reload-config)
+# Validate a file:     aerospace reload-config --dry-run
+# Single built-in Retina display; modifier = alt (Option).
+
+# Config format version. v2 unlocks explicit `persistent-workspaces` and changes
+# its fallback to an empty array (v1 inferred it from keybinding RHS). We set the
+# list explicitly below to PRESERVE the old v1 behavior (workspaces 1-9 persist).
+# Migrated from v1 2026-10-26; see https://nikitabobko.github.io/AeroSpace/guide#config-version
+config-version = 2
+
+# Keep workspaces 1-9 alive even when empty (reproduces the v1 inferred default).
+persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+# Start AeroSpace at login (it manages its own launch; no separate login item needed).
+start-at-login = true
+
+# Auto-reload this config whenever the file is saved (no need to hit alt-shift-c each edit).
+# NOTE: after first enabling this, you must reload once manually (alt-shift-c) to arm the watcher.
+auto-reload-config = true
+
+# -- Normalizations: keep the tree tidy so focus/move stay predictable --
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# Default root layout for new workspaces: tiles (side by side). alt-comma toggles accordion.
+default-root-container-layout = 'tiles'
+# Horizontal root: windows sit left-to-right; move focus with alt-h / alt-l.
+default-root-container-orientation = 'horizontal'
+
+# Accordion padding: how much the stacked (unfocused) windows peek out behind the focused one.
+# Higher = more reveal of the windows behind (default 30; 0 disables the peek).
+accordion-padding = 60
+
+# Mouse follows focus lazily (only when focus changes via keyboard).
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+# Focus follows mouse (focus the window under the cursor). Off; set true to enable.
+focus-follows-mouse.enabled = false
+
+# Normalize padding/gaps between windows and screen edges.
+[gaps]
+inner.horizontal = 4
+inner.vertical   = 4
+outer.left       = 4
+outer.right      = 4
+outer.top        = 4
+outer.bottom     = 4
+
+# ============================================================
+# Main mode — the default keybindings (modifier = alt)
+# ============================================================
+[mode.main.binding]
+
+# --- Launchers ---
+alt-enter = ['layout tiles vertical', 'exec-and-forget open -n -a Ghostty']  # new Ghostty, stacked vertically below the focused window
+
+# --- Layout toggles ---
+alt-slash = 'layout tiles horizontal vertical'           # toggle split orientation
+alt-comma = 'layout accordion horizontal vertical'       # toggle accordion (stacked)
+alt-f     = 'fullscreen'                                  # toggle fullscreen for focused window
+
+# --- Focus (vim h/j/k/l) ---
+alt-h = 'focus left'
+alt-j = 'focus down'
+alt-k = 'focus up'
+alt-l = 'focus right'
+
+# --- Move window (vim + shift) ---
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+# --- Join window into a neighbor's container (vim + ctrl) ---
+# Moved out of service mode 2026-10-26 so splits can be adjusted without entering it.
+# (alt-shift-hjkl is already 'move', so join uses alt-ctrl-hjkl.)
+alt-ctrl-h = 'join-with left'
+alt-ctrl-j = 'join-with down'
+alt-ctrl-k = 'join-with up'
+alt-ctrl-l = 'join-with right'
+
+# --- Resize focused window ---
+alt-minus  = 'resize smart -50'
+alt-equal  = 'resize smart +50'
+
+# --- Switch to workspace (alt-1..9, plus a couple of letters) ---
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-4 = 'workspace 4'
+alt-5 = 'workspace 5'
+alt-6 = 'workspace 6'
+alt-7 = 'workspace 7'
+alt-8 = 'workspace 8'
+alt-9 = 'workspace 9'
+
+# --- Move focused window to workspace (and follow it) ---
+alt-shift-1 = ['move-node-to-workspace 1', 'workspace 1']
+alt-shift-2 = ['move-node-to-workspace 2', 'workspace 2']
+alt-shift-3 = ['move-node-to-workspace 3', 'workspace 3']
+alt-shift-4 = ['move-node-to-workspace 4', 'workspace 4']
+alt-shift-5 = ['move-node-to-workspace 5', 'workspace 5']
+alt-shift-6 = ['move-node-to-workspace 6', 'workspace 6']
+alt-shift-7 = ['move-node-to-workspace 7', 'workspace 7']
+alt-shift-8 = ['move-node-to-workspace 8', 'workspace 8']
+alt-shift-9 = ['move-node-to-workspace 9', 'workspace 9']
+
+# --- Move to adjacent workspace (u = left/prev, i = right/next; wraps around) ---
+alt-u = 'workspace --wrap-around prev'
+alt-i = 'workspace --wrap-around next'
+
+# --- Jump back to previous workspace ---
+alt-tab = 'workspace-back-and-forth'
+
+# --- Config reload ---
+alt-shift-c = 'reload-config'
+
+# --- Enter "service" mode for less-common actions (press alt-shift-semicolon) ---
+alt-shift-semicolon = 'mode service'
+
+# ============================================================
+# Service mode — rarer actions; auto-returns to main after use
+# ============================================================
+[mode.service.binding]
+esc    = ['reload-config', 'mode main']
+r      = ['flatten-workspace-tree', 'mode main']   # reset the layout tree
+1      = ['exec-and-forget ~/.config/aerospace/layouts/ws1.sh', 'mode main']  # restore ws1: Chrome left | 2 Ghostty stacked right (added 2026-10-27)
+f      = ['layout floating tiling', 'mode main']   # toggle floating for focused window
+backspace = ['close-all-windows-but-current', 'mode main']
+# (join-with moved to main mode on alt-ctrl-hjkl, 2026-10-26)
+
+# ============================================================
+# Auto-assignment + float rules (on-window-detected)
+# Find an app's bundle id with: osascript -e 'id of app "AppName"'  (or: aerospace list-apps)
+# ============================================================
+
+# Ghostty -> tiled on workspace 1 (right of Chrome). NOT floating — so multiple
+# Ghostty windows tile; alt-enter opens the next one as a vertical split (stacks below).
+[[on-window-detected]]
+if.app-id = 'com.mitchellh.ghostty'
+run = 'move-node-to-workspace 1'
+
+# Chrome -> workspace 1
+[[on-window-detected]]
+if.app-id = 'com.google.Chrome'
+run = 'move-node-to-workspace 1'
+
+# VSCode -> workspace 2
+[[on-window-detected]]
+if.app-id = 'com.microsoft.VSCode'
+run = ['move-node-to-workspace 2']
+
+# Kiro -> workspace 2
+[[on-window-detected]]
+if.app-id = 'dev.kiro.desktop'
+run = ['move-node-to-workspace 2']
+
+# Obsidian -> workspace 2 (bundle id verified via Info.plist CFBundleIdentifier)
+[[on-window-detected]]
+if.app-id = 'md.obsidian'
+run = ['move-node-to-workspace 2', 'layout tiles horizontal']
+
+# Slack -> workspace 3
+[[on-window-detected]]
+if.app-id = 'com.tinyspeck.slackmacgap'
+run = ['move-node-to-workspace 3']
+
+# Outlook -> workspace 4
+[[on-window-detected]]
+if.app-id = 'com.microsoft.Outlook'
+run = ['move-node-to-workspace 4', 'layout tiles horizontal']
+
+# Zoom -> workspace 6
+# bundle id device-verified via `osascript -e 'id of app "zoom.us"'`
+[[on-window-detected]]
+if.app-id = 'us.zoom.xos'
+run = 'move-node-to-workspace 6'
+
+# Default float
+[[on-window-detected]]
+check-further-callbacks = true
+run = 'layout floating'
+
+# Float apps that don't tile well
+#[[on-window-detected]]
+#if.app-id = 'com.apple.systempreferences'
+#run = 'layout floating'
+
+#[[on-window-detected]]
+#if.app-id = 'com.apple.finder'
+#run = 'layout floating'
+
+# macOS Passwords app -> float
+#[[on-window-detected]]
+#if.app-id = 'com.apple.Passwords'
+#run = 'layout floating'
+
+# Cisco Secure Client (AnyConnect VPN GUI) -> float
+#[[on-window-detected]]
+#if.app-id = 'com.cisco.secureclient.gui'
+#run = 'layout floating'

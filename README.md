@@ -320,6 +320,38 @@ Most settings apply on config reload (`Cmd+Shift+,`); changing `quick-terminal-p
 
 ---
 
+## AeroSpace (Tiling Window Manager)
+
+[AeroSpace](https://github.com/nikitabobko/AeroSpace) is an i3-like tiling window manager. Config lives at `.config/aerospace/aerospace.toml`; copy it (and `layouts/`) to `~/.config/aerospace/`. AeroSpace also reads `~/.aerospace.toml`, and reports an error if **both** exist, so keep only one.
+
+```bash
+brew install --cask nikitabobko/tap/aerospace
+aerospace reload-config --dry-run   # validate the active config
+```
+
+The config sets `start-at-login` and `auto-reload-config`, so edits apply on save after one manual reload (`alt-shift-c`).
+
+Key bindings (modifier = `alt`/Option):
+
+| Keys | Action |
+|---|---|
+| `alt-h/j/k/l` | Focus left/down/up/right |
+| `alt-shift-h/j/k/l` | Move window |
+| `alt-ctrl-h/j/k/l` | Join window into the neighbor's container |
+| `alt-1..9` / `alt-shift-1..9` | Go to workspace / move window there (and follow) |
+| `alt-u` / `alt-i` | Previous / next workspace (wraps) |
+| `alt-tab` | Back to the previous workspace |
+| `alt-enter` | New Ghostty window, split below the focused one |
+| `alt-slash` / `alt-comma` | Toggle split orientation / accordion |
+| `alt-f` | Fullscreen |
+| `alt-minus` / `alt-equal` | Shrink / grow |
+| `alt-shift-c` | Reload config |
+| `alt-shift-;` | Service mode: `r` reset tree, `f` toggle floating, `backspace` close others, `1` run `layouts/ws1.sh`, `esc` back |
+
+App rules send Ghostty and Chrome to workspace 1, VS Code / Kiro / Obsidian to 2, Slack to 3, Outlook to 4, Zoom to 6; any other window floats. `layouts/ws1.sh` rebuilds workspace 1 as Chrome on the left with two Ghostty windows stacked on the right. AeroSpace has no built-in layout save/restore.
+
+---
+
 ## Zoxide (Smarter `cd`)
 
 [zoxide](https://github.com/ajeetdsouza/zoxide) learns the directories you use and jumps by frecency. Initialized (and cached) in the interactive block of `.bash_profile`, after Starship so its directory-tracking hook survives. Skipped automatically if not installed.
