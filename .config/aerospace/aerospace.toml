@@ -35,6 +35,9 @@ accordion-padding = 60
 
 # Mouse follows focus lazily (only when focus changes via keyboard).
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+# No window-closed callback exists; closing a window changes focus, so this guard
+# re-runs ws1.sh when the Ghostty count changes
+on-focus-changed = ['exec-and-forget ~/.config/aerospace/layouts/ws1-watch.sh']
 
 # Focus follows mouse (focus the window under the cursor). Off; set true to enable.
 focus-follows-mouse.enabled = false
@@ -52,9 +55,6 @@ outer.bottom     = 4
 # Main mode — the default keybindings (modifier = alt)
 # ============================================================
 [mode.main.binding]
-
-# --- Launchers ---
-alt-enter = ['layout tiles vertical', 'exec-and-forget open -n -a Ghostty']  # new Ghostty, stacked vertically below the focused window
 
 # --- Layout toggles ---
 alt-slash = 'layout tiles horizontal vertical'           # toggle split orientation
@@ -126,7 +126,7 @@ alt-shift-semicolon = 'mode service'
 [mode.service.binding]
 esc    = ['reload-config', 'mode main']
 r      = ['flatten-workspace-tree', 'mode main']   # reset the layout tree
-1      = ['exec-and-forget ~/.config/aerospace/layouts/ws1.sh', 'mode main']  # restore ws1: Chrome left | 2 Ghostty stacked right (added 2026-10-27)
+1      = ['exec-and-forget ~/.config/aerospace/layouts/ws1.sh', 'mode main']  # restore ws1: Chrome left | Ghostty column right (accordion at 2, tiles at 3+)
 f      = ['layout floating tiling', 'mode main']   # toggle floating for focused window
 backspace = ['close-all-windows-but-current', 'mode main']
 # (join-with moved to main mode on alt-ctrl-hjkl, 2026-10-26)
@@ -137,10 +137,12 @@ backspace = ['close-all-windows-but-current', 'mode main']
 # ============================================================
 
 # Ghostty -> tiled on workspace 1 (right of Chrome). NOT floating — so multiple
-# Ghostty windows tile; alt-enter opens the next one as a vertical split (stacks below).
+# Ghostty windows share the right column. ws1.sh (run on every new Ghostty, and via
+# service mode 1) makes it a vertical accordion with 2 windows, vertical tiles with 3+.
 [[on-window-detected]]
 if.app-id = 'com.mitchellh.ghostty'
-run = 'move-node-to-workspace 1'
+# exec-and-forget re-runs ws1.sh so every new Ghostty joins the right-hand column
+run = ['move-node-to-workspace 1', 'exec-and-forget ~/.config/aerospace/layouts/ws1.sh']
 
 # Chrome -> workspace 1
 [[on-window-detected]]

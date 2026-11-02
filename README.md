@@ -341,14 +341,13 @@ Key bindings (modifier = `alt`/Option):
 | `alt-1..9` / `alt-shift-1..9` | Go to workspace / move window there (and follow) |
 | `alt-u` / `alt-i` | Previous / next workspace (wraps) |
 | `alt-tab` | Back to the previous workspace |
-| `alt-enter` | New Ghostty window, split below the focused one |
 | `alt-slash` / `alt-comma` | Toggle split orientation / accordion |
 | `alt-f` | Fullscreen |
 | `alt-minus` / `alt-equal` | Shrink / grow |
 | `alt-shift-c` | Reload config |
 | `alt-shift-;` | Service mode: `r` reset tree, `f` toggle floating, `backspace` close others, `1` run `layouts/ws1.sh`, `esc` back |
 
-App rules send Ghostty and Chrome to workspace 1, VS Code / Kiro / Obsidian to 2, Slack to 3, Outlook and Apple Mail to 4, Zoom to 6; any other window floats. `layouts/ws1.sh` rebuilds workspace 1 as Chrome on the left with two Ghostty windows stacked on the right. AeroSpace has no built-in layout save/restore.
+App rules send Ghostty and Chrome to workspace 1, VS Code / Kiro / Obsidian to 2, Slack to 3, Outlook and Apple Mail to 4, Zoom to 6; any other window floats. `layouts/ws1.sh` rebuilds workspace 1: Chrome on the left, every Ghostty window in one column on the right. With 2 Ghostty windows the column is a vertical accordion; with 3 or more it switches to vertical tiles, because AeroSpace's accordion only shows the focused window's immediate neighbors. It runs automatically when a Ghostty window opens (the `on-window-detected` rule) and when one closes. AeroSpace has no window-closed callback, so `layouts/ws1-watch.sh` runs on every focus change and re-runs `ws1.sh` only when the Ghostty count changes. AeroSpace has no built-in layout save/restore.
 
 ---
 
