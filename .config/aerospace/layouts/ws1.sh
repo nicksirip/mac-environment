@@ -30,6 +30,9 @@ trap 'rmdir "$LOCK" 2>/dev/null' EXIT
 
 chrome=$("$A" list-windows --monitor all --app-bundle-id com.google.Chrome \
            --format '%{window-id}' | head -1)
+# Safari takes Chrome's place on the left when Chrome isn't open.
+[ -z "$chrome" ] && chrome=$("$A" list-windows --monitor all --app-bundle-id com.apple.Safari \
+           --format '%{window-id}' | head -1)
 ghosts=()   # bash 3.2 (macOS /bin/bash): no mapfile
 while IFS= read -r id; do [ -n "$id" ] && ghosts+=("$id"); done < <(
   "$A" list-windows --monitor all --app-bundle-id com.mitchellh.ghostty \
@@ -38,7 +41,7 @@ n=${#ghosts[@]}
 echo "$n" > "$STATE"   # ws1-watch.sh re-runs this script only when the count changes
 
 if [ -z "$chrome" ] || [ "$n" -eq 0 ]; then
-  echo "ws1.sh: need 1 Chrome + at least 1 Ghostty window (chrome='$chrome' ghostty=$n)" >&2
+  echo "ws1.sh: need 1 Chrome or Safari + at least 1 Ghostty window (browser='$chrome' ghostty=$n)" >&2
   exit 1
 fi
 

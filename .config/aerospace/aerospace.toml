@@ -149,6 +149,11 @@ run = ['move-node-to-workspace 1', 'exec-and-forget ~/.config/aerospace/layouts/
 if.app-id = 'com.google.Chrome'
 run = 'move-node-to-workspace 1'
 
+# Safari -> workspace 1 (same as Chrome)
+[[on-window-detected]]
+if.app-id = 'com.apple.Safari'
+run = 'move-node-to-workspace 1'
+
 # VSCode -> workspace 2
 [[on-window-detected]]
 if.app-id = 'com.microsoft.VSCode'
