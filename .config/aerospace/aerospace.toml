@@ -169,6 +169,11 @@ run = ['move-node-to-workspace 2']
 if.app-id = 'md.obsidian'
 run = ['move-node-to-workspace 2', 'layout tiles horizontal']
 
+# Parallels Desktop -> workspace 2, accordion layout
+[[on-window-detected]]
+if.app-id = 'com.parallels.desktop.console'
+run = ['move-node-to-workspace 2', 'layout accordion horizontal']
+
 # Slack -> workspace 3
 [[on-window-detected]]
 if.app-id = 'com.tinyspeck.slackmacgap'
